@@ -4,11 +4,8 @@
 #include <SPI.h>
 #include <Stepper.h>
 
-/* ---------- ДАТЧИК ---------- */
 Adafruit_BMP085 bmp;
 
-/* ---------- RADIO (433 MHz) ---------- */
-// (бит/с, rxPin, txPin, pttPin). Используем только TX на GPIO2.
 RH_ASK driver(2000, 27, 2, 255);
 
 /* ---------- ШАГОВИК 28BYJ-48 + ULN2003 ---------- */
@@ -17,7 +14,6 @@ constexpr int IN2 = 18;
 constexpr int IN3 = 19;
 constexpr int IN4 = 23;
 
-// 28BYJ-48 ≈ 2048 шагов/оборот (half-step). В стандартной Stepper это значение подходит.
 constexpr int STEPS_PER_REV = 2048;
 Stepper stepperMotor(STEPS_PER_REV, IN1, IN3, IN2, IN4); // порядок пинов важен!
 
@@ -89,8 +85,6 @@ void loop() {
   }
 
   /* ---- ВРАЩЕНИЕ МОТОРА ----
-     Stepper.step() — блокирующая на один шаг, поэтому крутим помалу,
-     чтобы не мешать передаче (≈1–2 мс/шаг на такой скорости). */
   if (motorActive) {
     stepperMotor.step(1);                  // +1 шаг; смените на -1 для обратного направления
 
@@ -98,14 +92,11 @@ void loop() {
       motorActive = false;
       Serial.println(F("MOTOR: STOP"));
 
-      // Откладываем «взвод» триггера, чтобы не запускаться мгновенно снова
-      // даже если температура всё ещё выше порога.
       tMotorUntil = now + REARM_DELAY_MS;  // временно переиспользуем переменную
     }
   } else if (!armed) {
     // Ждём, когда закончится «перезарядка» триггера
     if ((long)(now - tMotorUntil) >= 0) armed = true;
   }
-
-  // без delay() — всё на millis()
 }
+
